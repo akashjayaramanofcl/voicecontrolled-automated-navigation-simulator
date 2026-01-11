@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Backend",
+      "type": "shell",
+      "command": "cd backend && ${command:python.interpreterPath} app.py",
+      "windows": {
+        "command": "cd backend && .\\venv\\Scripts\\activate && python app.py"
+      },
+      "linux": {
+        "command": "cd backend && source venv/bin/activate && python app.py"
+      },
+      "osx": {
+        "command": "cd backend && source venv/bin/activate && python app.py"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "servers"
+      }
+    },
+    {
+      "label": "Start Frontend",
+      "type": "shell",
+      "command": "cd frontend && npm run dev",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "servers"
+      }
+    },
+    {
+      "label": "Start VoiceRover",
+      "dependsOn": ["Start Backend", "Start Frontend"],
+      "problemMatcher": []
+    }
+  ]
+}
