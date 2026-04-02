@@ -15,7 +15,6 @@ import "./App.css";
 const BACKEND_URL =
   "https://voicecontrolled-automated-navigation-wjjv.onrender.com";
 
-
 // Predefined locations for voice commands
 const LOCATIONS = {
   pharmacy: { row: 2, col: 18 },
@@ -59,6 +58,51 @@ const SCENARIOS = {
     pathColor: "path-red",
     locations: ["entrance", "emergency", "icu"],
   },
+};
+
+// ==========================================
+// FUZZY MATCHING & NLP UTILS (FR1.3 & FR1.8)
+// ==========================================
+
+// Calculates Levenshtein Distance between two strings
+const levenshtein = (a, b) => {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1),
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+};
+
+// Returns a similarity score between 0 and 1
+const getSimilarity = (str1, str2) => {
+  const distance = levenshtein(str1, str2);
+  const maxLen = Math.max(str1.length, str2.length);
+  return maxLen === 0 ? 1 : (maxLen - distance) / maxLen;
+};
+
+// FR1.8: Keyword variations mapping
+const KEYWORD_VARIATIONS = {
+  pharmacy: ["pharmacy", "pharmacies", "pharm", "medical", "medicine"],
+  icu: ["icu", "intensive care"],
+  lab: ["lab", "laboratory", "testing"],
+  entrance: ["entrance", "entry", "door", "gate"],
+  loading: ["loading", "loading dock", "dock"],
+  storage: ["storage", "store", "inventory", "warehouse"],
+  emergency: ["emergency", "er", "casualty", "urgent"],
+  cafeteria: ["cafeteria", "cafe", "canteen", "food"],
 };
 
 function App() {
@@ -194,42 +238,109 @@ function App() {
 
   const processVoiceCommand = (command) => {
     console.log("Processing command:", command);
+    // Remove punctuation and normalize
+    const normalizedCommand = command
+      .toLowerCase()
+      .replace(/[.,!?]/g, "")
+      .trim();
+    const words = normalizedCommand.split(/\s+/);
 
-    // Normalize command - remove extra words
-    const normalizedCommand = command.toLowerCase().trim();
-    let destination = null;
+    let detectedDestinations = [];
 
-    // Check for each location keyword in the command
-    for (const [locationKey, coords] of Object.entries(LOCATIONS)) {
-      if (normalizedCommand.includes(locationKey)) {
-        destination = locationKey;
-        break;
+    // FR1.3 & FR1.8: Find all fuzzy matches and variations in the sentence
+    Object.entries(KEYWORD_VARIATIONS).forEach(([key, variations]) => {
+      variations.forEach((variation) => {
+        // 1. Check exact substring match (great for multi-word like "intensive care")
+        if (normalizedCommand.includes(variation)) {
+          detectedDestinations.push({
+            key,
+            index: normalizedCommand.indexOf(variation),
+            match: variation,
+          });
+        } else {
+          // 2. Check fuzzy match for mispronounced words (FR1.3: 70% threshold)
+          words.forEach((word) => {
+            if (word.length >= 3) {
+              // Only fuzzy match words longer than 3 chars
+              const sim = getSimilarity(word, variation);
+              if (sim >= 0.7) {
+                detectedDestinations.push({
+                  key,
+                  index: normalizedCommand.indexOf(word),
+                  match: word,
+                });
+              }
+            }
+          });
+        }
+      });
+    });
+
+    // Sort the detected destinations by where they appear in the spoken sentence
+    detectedDestinations.sort((a, b) => a.index - b.index);
+
+    // NEW REQUIREMENT: Context & Negation Handling
+    let finalDestination = null;
+    const negationWords = [
+      "dont",
+      "don't",
+      "do not",
+      "not",
+      "avoid",
+      "skip",
+      "instead of",
+    ];
+
+    detectedDestinations.forEach((dest) => {
+      // Look at the text strictly before this detected location
+      const textBefore = normalizedCommand.substring(0, dest.index).trim();
+      const wordsBefore = textBefore.split(/\s+/).slice(-3); // Check the 3 words prior
+
+      // Check if the user negated this specific location
+      const isNegated =
+        wordsBefore.some((w) => negationWords.includes(w)) ||
+        textBefore.endsWith("instead of");
+
+      if (!isNegated) {
+        // The last non-negated destination spoken wins!
+        // This handles: "Go to lab... wait no, go to pharmacy"
+        finalDestination = dest.key;
       }
-    }
+    });
 
-    console.log("Detected destination:", destination);
-    console.log("Current scenario:", scenario);
-    console.log("Available locations:", SCENARIOS[scenario]?.locations);
+    // Action execution
+    if (finalDestination && scenario) {
+      // FR1.4: Validate scenario
+      if (SCENARIOS[scenario].locations.includes(finalDestination)) {
+        // FR1.7: Command Cancellation - Immediately halt robot if already moving!
+        if (isMoving) {
+          wasMovingRef.current = true;
+          clearInterval(moveIntervalRef.current);
+          setIsMoving(false);
+        }
 
-    if (destination && scenario) {
-      if (SCENARIOS[scenario].locations.includes(destination)) {
-        console.log("Setting target to:", LOCATIONS[destination]);
-        setTargetPos(LOCATIONS[destination]);
+        // FR1.5: Set target
+        setTargetPos(LOCATIONS[finalDestination]);
         showMessage(
-          `🎯 Navigating to ${destination.toUpperCase()}...`,
+          `🎯 Navigating to ${finalDestination.toUpperCase()}...`,
           "success",
         );
       } else {
+        // FR1.6: Scenario Error
         const availableList = SCENARIOS[scenario].locations.join(", ");
         showMessage(
-          `❌ "${destination}" not available. Try: ${availableList}`,
+          `❌ "${finalDestination}" is in another zone. Try: ${availableList}`,
           "error",
         );
       }
-    } else if (!destination) {
+    } else if (!finalDestination && detectedDestinations.length > 0) {
+      // Caught the negation, but missing the alternate location!
+      showMessage(`⚠️ Command negated. Where should I go?`, "warning");
+    } else {
+      // FR1.6: Not recognized
       const availableList = SCENARIOS[scenario].locations.join(", ");
       showMessage(
-        `❓ Location not recognized. Available: ${availableList}`,
+        `❓ Location not recognized. Try: ${availableList}`,
         "warning",
       );
     }
