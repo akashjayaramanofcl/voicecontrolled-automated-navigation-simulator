@@ -12,7 +12,9 @@ import {
 import axios from "axios";
 import "./App.css";
 
-const BACKEND_URL = "http://localhost:5000";
+const BACKEND_URL =
+  "https://voicecontrolled-automated-navigation-wjjv.onrender.com";
+
 
 // Predefined locations for voice commands
 const LOCATIONS = {
