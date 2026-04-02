@@ -9,8 +9,9 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
@@ -37,13 +38,13 @@ body {
 
 /* Animated Grid Background */
 .menu-screen::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
+  background-image:
     linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
     linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
   background-size: 50px 50px;
@@ -53,13 +54,17 @@ body {
 
 /* Gradient Overlay */
 .menu-screen::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(88, 28, 135, 0.3), rgba(10, 14, 39, 0.9));
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(88, 28, 135, 0.3),
+    rgba(10, 14, 39, 0.9)
+  );
   z-index: 0;
 }
 
@@ -117,7 +122,8 @@ body {
 }
 
 @keyframes float-orb {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
   33% {
@@ -209,7 +215,7 @@ body {
 }
 
 .scenario-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -543,10 +549,14 @@ body {
   color: white;
   font-size: 1rem;
   padding: 1rem;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9); /* Sleek purple */
+  box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.3);
+  transition: all 0.3s ease;
 }
 
 .btn-listening {
   background: #ef4444;
+  box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -556,8 +566,10 @@ body {
   margin-bottom: 0.5rem;
 }
 
-.btn-execute:hover:not(:disabled) {
-  background: #15803d;
+.btn-voice:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px -1px rgba(139, 92, 246, 0.4);
 }
 
 .btn-reset {
@@ -660,7 +672,8 @@ body {
    ========================================== */
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -669,7 +682,8 @@ body {
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
   }
   50% {
@@ -678,7 +692,8 @@ body {
 }
 
 @keyframes pulse-target {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
   }
